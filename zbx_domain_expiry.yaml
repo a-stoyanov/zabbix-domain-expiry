@@ -1,0 +1,152 @@
+zabbix_export:
+  version: '6.4'
+  templates:
+    - uuid: d2df9ca51f754af8aff5d50f96c656e3
+      template: 'Domain Expiry'
+      name: 'Domain Expiry'
+      description: 'Template downloaded from: https://github.com/a-stoyanov/zabbix-domain-expiry'
+      vendor:
+        name: github.com/a-stoyanov
+        version: 6.4-0
+      groups:
+        - name: Custom/Domain
+      items:
+        - uuid: 24dcc49a7c384aaeb3dd8846b3401986
+          name: 'Domain Check Expiry'
+          type: EXTERNAL
+          key: 'check_domain.sh["-d",{HOST.NAME},"-s",{$WHOIS_SERVER},"-w",{$EXP_WARN},"-c",{$EXP_CRIT}]'
+          delay: 1d
+          history: '0'
+          trends: '0'
+          value_type: TEXT
+        - uuid: 78a9ed45942a482f88d60acd4a24538d
+          name: 'Days Left'
+          type: DEPENDENT
+          key: domain_check_expiry.days_left
+          delay: '0'
+          preprocessing:
+            - type: REGEX
+              parameters:
+                - 'Days left: (\d+)'
+                - \1
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'check_domain.sh["-d",{HOST.NAME},"-s",{$WHOIS_SERVER},"-w",{$EXP_WARN},"-c",{$EXP_CRIT}]'
+        - uuid: bccdb32210514ba1801f3c9a50c2b737
+          name: 'Days Since Expired'
+          type: DEPENDENT
+          key: domain_check_expiry.days_since_expired
+          delay: '0'
+          preprocessing:
+            - type: REGEX
+              parameters:
+                - 'Days since expired: (\d+)'
+                - \1
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'check_domain.sh["-d",{HOST.NAME},"-s",{$WHOIS_SERVER},"-w",{$EXP_WARN},"-c",{$EXP_CRIT}]'
+        - uuid: c6c00c3717d84bf291420b7913b1133d
+          name: 'Expire Date'
+          type: DEPENDENT
+          key: domain_check_expiry.expire_date
+          delay: '0'
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: REGEX
+              parameters:
+                - 'Expire date: (.+)'
+                - \1
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'check_domain.sh["-d",{HOST.NAME},"-s",{$WHOIS_SERVER},"-w",{$EXP_WARN},"-c",{$EXP_CRIT}]'
+        - uuid: 67828b062ef74c0f8e866a9fbfb78d27
+          name: Status
+          type: DEPENDENT
+          key: domain_check_expiry.status
+          delay: '0'
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: REGEX
+              parameters:
+                - 'State: (.+)'
+                - \1
+          master_item:
+            key: 'check_domain.sh["-d",{HOST.NAME},"-s",{$WHOIS_SERVER},"-w",{$EXP_WARN},"-c",{$EXP_CRIT}]'
+          triggers:
+            - uuid: 2a7fb4f347ce4c5aa0617f08a0b339f0
+              expression: 'find(/Domain Expiry/domain_check_expiry.status,#1,"like","UNKNOWN")=1'
+              name: 'Domain Expiry: {HOST.NAME} - {ITEM.LASTVALUE1}'
+              tags:
+                - tag: domain
+                  value: status
+      tags:
+        - tag: domain
+          value: registration
+      macros:
+        - macro: '{$EXP_CRIT}'
+          value: '7'
+          description: 'Threshold value of days remaining before triggering a HIGH alert'
+        - macro: '{$EXP_WARN}'
+          value: '30'
+          description: 'Threshold value of days remaining before triggering a WARNING alert'
+        - macro: '{$WHOIS_SERVER}'
+          value: '""'
+          description: 'Used to specify which whois service to use. Default value "" uses the whois util config default'
+  triggers:
+    - uuid: acf67a4bfd9649c9a96c63cafa812e9b
+      expression: |
+        find(/Domain Expiry/domain_check_expiry.status,#1,"like","EXPIRED")=1
+        and
+        last(/Domain Expiry/domain_check_expiry.days_since_expired)>=0
+        and
+        last(/Domain Expiry/domain_check_expiry.expire_date)<>0
+      name: 'Domain Expiry: {HOST.NAME} has expired'
+      opdata: '{ITEM.LASTVALUE2} days ago on {ITEM.LASTVALUE3}'
+      priority: DISASTER
+      dependencies:
+        - name: 'Domain Expiry: {HOST.NAME} - {ITEM.LASTVALUE1}'
+          expression: 'find(/Domain Expiry/domain_check_expiry.status,#1,"like","UNKNOWN")=1'
+      tags:
+        - tag: domain
+          value: expired
+    - uuid: 7664fe7d988e4bcca9dd1518e42abf79
+      expression: |
+        last(/Domain Expiry/domain_check_expiry.days_left)<={$EXP_CRIT}
+        and
+        last(/Domain Expiry/domain_check_expiry.expire_date)<>0
+      name: 'Domain Expiry: {HOST.NAME} will expire soon'
+      opdata: 'in {ITEM.LASTVALUE1} days on {ITEM.LASTVALUE2}'
+      priority: HIGH
+      dependencies:
+        - name: 'Domain Expiry: {HOST.NAME} has expired'
+          expression: |
+            find(/Domain Expiry/domain_check_expiry.status,#1,"like","EXPIRED")=1
+            and
+            last(/Domain Expiry/domain_check_expiry.days_since_expired)>=0
+            and
+            last(/Domain Expiry/domain_check_expiry.expire_date)<>0
+      tags:
+        - tag: domain
+          value: expiry
+    - uuid: ff152c25e3114727ad0a34ccd2a1640e
+      expression: |
+        last(/Domain Expiry/domain_check_expiry.days_left)<={$EXP_WARN}
+        and
+        last(/Domain Expiry/domain_check_expiry.expire_date)<>0
+      name: 'Domain Expiry: {HOST.NAME} will expire soon'
+      opdata: 'in {ITEM.LASTVALUE1} days on {ITEM.LASTVALUE2}'
+      priority: WARNING
+      dependencies:
+        - name: 'Domain Expiry: {HOST.NAME} will expire soon'
+          expression: |
+            last(/Domain Expiry/domain_check_expiry.days_left)<={$EXP_CRIT}
+            and
+            last(/Domain Expiry/domain_check_expiry.expire_date)<>0
+      tags:
+        - tag: domain
+          value: expiry
