@@ -9,6 +9,7 @@ Tested on:
 
 ## Requirements:
 * Zabbix v6.4 or later
+* whois (GNU utils)
 
 ## Setup:
 
