@@ -9,7 +9,7 @@ Tested on:
 
 ## Requirements:
 * Zabbix v6.4 or later
-* whois (GNU utils)
+* whois installed on zabbix server (GNU utils)
 
 ## Setup:
 
@@ -24,7 +24,7 @@ Tested on:
 |-----|-------------|-----------|
 |{$EXP_CRIT}|7|Threshold value of days remaining before triggering a HIGH alert|
 |{$EXP_WARN}|30|Threshold value of days remaining before triggering a WARNING alert|
-|{$WHOIS_SERVER}|""|Used to specify which whois service to use. Default value "" uses the whois util config default|
+|{$WHOIS_SERVER}|""|Specify the whois service to use (e.g whois.godaddy.com). Default value "" uses the whois util config default|
 
 ## Items:
 
