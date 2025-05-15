@@ -447,6 +447,15 @@ get_expiration() {
         $0 ~ "expires: *" DATE_YYYY_MM_DD_DASH_HH_MM_SS_TZOFFSET {split($2, a, "-"); printf("%s-%s-%s", a[1], a[2], a[3]); exit}
         # FIXME: XXX: weak patterns
 
+        # .ar domains
+        # expire:               2025-12-22 00:00:00
+        # (uses tabs between colon and date, we match tabs or spaces regardless)
+        $0 ~ "expire:[ \t]*" DATE_YYYY_MM_DD_HHMMSS {
+                sub(/^.*expire:[ \t]*/, "")
+                split($1, a, "-");
+                printf("%s-%s-%s", a[1], a[2], a[3]);
+        }
+
         # renewal: 31-March-2016
         /renewal:/{split($2, a, "-"); printf("%s-%s-%s\n", a[3], month2moy(a[2]), a[1]); exit}
 
@@ -480,6 +489,9 @@ else
         run_whois
 fi
 expiration=$(get_expiration "$outfile")
+
+# Trim leading and trailing whitespace
+expiration=$(echo "$expiration" | xargs)
 
 [ -z "$expiration" ] && die "$STATE_UNKNOWN" "State: UNKNOWN ; Unable to figure out expiration date for $domain Domain."
 
