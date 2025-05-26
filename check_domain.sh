@@ -5,7 +5,7 @@
 # Copyright (c) 2009-2016 Elan Ruusamäe <glen@pld-linux.org> (Maintainer)
 # Zabbix adapted version: https://github.com/a-stoyanov/zabbix-domain-expiry (A.Stoyanov)
 # 20/11/2023 - added '-s|--server' switch logic to accept empty quoted value ""
-# 20/11/2023 - changed program exit output to align with zabbix template item pre-processing 
+# 20/11/2023 - changed program exit output to align with zabbix template item pre-processing
 
 # fail on first error, do not continue
 set -e
@@ -446,6 +446,13 @@ get_expiration() {
         # expires: 2017-09-01 17:09:32+03
         $0 ~ "expires: *" DATE_YYYY_MM_DD_DASH_HH_MM_SS_TZOFFSET {split($2, a, "-"); printf("%s-%s-%s", a[1], a[2], a[3]); exit}
         # FIXME: XXX: weak patterns
+
+        # expiration date: 2025.06.24 14:00:00
+        /[Ee]xpiration date:/ && $(NF-1) ~ DATE_YYYY_MM_DD_DOT {
+            split($(NF-1), a, ".");
+            printf("%s-%s-%s", a[1], a[2], a[3]);
+            exit;
+        }
 
         # renewal: 31-March-2016
         /renewal:/{split($2, a, "-"); printf("%s-%s-%s\n", a[3], month2moy(a[2]), a[1]); exit}
