@@ -9,7 +9,7 @@ zabbix_export:
         name: github.com/a-stoyanov
         version: 6.4-0
       groups:
-        - name: Custom/Domain
+        - name: Templates
       items:
         - uuid: 24dcc49a7c384aaeb3dd8846b3401986
           name: 'Domain Check Expiry'
