@@ -114,6 +114,14 @@ zabbix_export:
       tags:
         - tag: domain
           value: expired
+    - uuid: bbbebfd952d34f7783b7d5e36a0bfa01
+      expression: 'find(/Domain Expiry/domain_check_expiry.status,#1,"like","EXPIRED")=1'
+      name: 'Domain Expiry: {HOST.NAME} is expired and in grace period'
+      opdata: 'EXPIRED - renewal grace period'
+      priority: DISASTER
+      tags:
+        - tag: domain
+          value: expired
     - uuid: 7664fe7d988e4bcca9dd1518e42abf79
       expression: |
         last(/Domain Expiry/domain_check_expiry.days_left)<={$EXP_CRIT}
