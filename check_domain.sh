@@ -217,6 +217,10 @@ run_whois() {
         $whois ${server:+-h $server} "$domain" > "$outfile" 2>&1 && error=$? || error=$?
         [ -s "$outfile" ] || die "$STATE_UNKNOWN" "State: UNKNOWN ; Domain $domain doesn't exist or no WHOIS server available."
 
+        if grep -qi "billing period had finished" "$outfile"; then
+            die "$STATE_CRITICAL" "State: EXPIRED ; Domain is in billing grace period (already expired but renewable)"
+        fi
+
         if grep -q -e "No match for" -e "NOT FOUND" -e "NO DOMAIN" "$outfile"; then
                 die "$STATE_UNKNOWN" "State: UNKNOWN ; Domain $domain doesn't exist."
         fi
