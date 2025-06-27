@@ -97,7 +97,7 @@ The `check_domain.sh` script can be run manually for testing:
 
 ```bash
 ./check_domain.sh -d example.com
-./check_domain.sh -d example.com -w 30 -c 7 -r '' -s ''
+./check_domain.sh -d example.com -r 'https://rdap.example.com' -s 'whois.example.com' -w 30 -c 7
 ```
 
 **Options**:
